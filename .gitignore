@@ -1,0 +1,58 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code related
+.vscode/
+
+# Flutter/Dart/Pub-related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Android related
+**/android/local.properties
+**/android/key.properties
+**/android/app/src/main/res/raw/google_services.json
+**/android/bundle
+**/android/gradle-wrapper.properties
+
+# iOS/macOS related
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.xcconfig
+**/ios/Pods/
+**/macos/Flutter/ephemeral/
+
+# Log files
+*.log
+
+# Firebase related
+.firebaserc
+firebase.json
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Local env files
+.env
+.env.*
+servicejson/

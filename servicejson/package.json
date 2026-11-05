@@ -1,0 +1,14 @@
+{
+  "name": "servicejson",
+  "version": "1.0.0",
+  "description": "",
+  "main": "migrate_firestore.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Admin — Gautam Egg Store</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── Login ──────────────────────────────────────────────── */
+    #login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px 36px;
+      width: 340px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.10);
+    }
+    .login-card h2 { font-size: 20px; margin-bottom: 6px; }
+    .login-card p  { color: #666; margin-bottom: 24px; font-size: 13px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 500; margin-bottom: 6px; color: #444; }
+    .form-group input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 14px; outline: none;
+      transition: border-color .2s;
+    }
+    .form-group input:focus { border-color: #4CAF50; }
+    .btn-primary {
+      width: 100%; padding: 11px;
+      background: #4CAF50; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-primary:hover { background: #43a047; }
+    #login-error { color: #e53e3e; font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+    /* ── App shell ──────────────────────────────────────────── */
+    #app { display: none; }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+    #user-info { font-size: 13px; color: #666; display: flex; align-items: center; gap: 14px; }
+    #user-info span { font-weight: 500; color: #333; }
+    .btn-logout {
+      padding: 6px 14px; background: transparent;
+      border: 1px solid #d1d5db; border-radius: 6px;
+      font-size: 13px; cursor: pointer; color: #555;
+      transition: background .15s;
+    }
+    .btn-logout:hover { background: #f3f4f6; }
+
+    main { padding: 24px 28px; }
+
+    /* ── Tabs ───────────────────────────────────────────────── */
+    .tabs {
+      display: flex; gap: 6px; margin-bottom: 20px;
+      border-bottom: 2px solid #e5e7eb; padding-bottom: 0;
+    }
+    .tab-btn {
+      padding: 9px 20px; border: none; background: none;
+      font-size: 14px; font-weight: 500; color: #666;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: color .2s;
+    }
+    .tab-btn.active { color: #4CAF50; border-bottom-color: #4CAF50; }
+    .tab-btn .badge {
+      display: inline-block; background: #fee2e2; color: #dc2626;
+      font-size: 11px; font-weight: 700; padding: 1px 7px;
+      border-radius: 12px; margin-left: 6px;
+    }
+    .tab-btn.active .badge { background: #dcfce7; color: #16a34a; }
+
+    /* ── Cards / Table ──────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+    }
+    .card-empty {
+      padding: 48px; text-align: center;
+      color: #999; font-size: 14px;
+    }
+    .loading { padding: 36px; text-align: center; color: #aaa; font-size: 13px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #f9fafb;
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 12px; font-weight: 600;
+      color: #6b7280; text-transform: uppercase;
+      letter-spacing: .04em;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tbody tr { border-bottom: 1px solid #f3f4f6; transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td { padding: 12px 16px; vertical-align: middle; }
+
+    .user-name  { font-weight: 600; color: #111; }
+    .user-phone { font-size: 12px; color: #888; margin-top: 2px; }
+    .products-list { font-size: 12px; color: #555; max-width: 200px; }
+    .products-list span { display: block; line-height: 1.5; }
+
+    .schedule-badge {
+      display: inline-block;
+      background: #eff6ff; color: #2563eb;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+    }
+
+    .status-badge {
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      display: inline-block;
+    }
+    .status-pending  { background: #fff7ed; color: #c2410c; }
+    .status-active   { background: #dcfce7; color: #15803d; }
+    .status-paused   { background: #fef9c3; color: #854d0e; }
+    .status-cancelled{ background: #f1f5f9; color: #64748b; }
+
+    .total-cell { font-weight: 600; color: #111; }
+
+    /* ── Verify inline form ─────────────────────────────────── */
+    .verify-form {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .verify-form input[type="datetime-local"] {
+      padding: 7px 10px; border: 1px solid #d1d5db;
+      border-radius: 7px; font-size: 13px; outline: none;
+      transition: border-color .2s;
+    }
+    .verify-form input[type="datetime-local"]:focus { border-color: #4CAF50; }
+    .btn-verify {
+      padding: 7px 16px; background: #4CAF50; color: #fff;
+      border: none; border-radius: 7px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: background .2s;
+      white-space: nowrap;
+    }
+    .btn-verify:hover   { background: #43a047; }
+    .btn-verify:disabled{ background: #a7f3a7; cursor: not-allowed; }
+
+    /* reschedule for active */
+    .btn-reschedule {
+      padding: 6px 13px; background: #eff6ff; color: #2563eb;
+      border: 1px solid #bfdbfe; border-radius: 7px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-reschedule:hover { background: #dbeafe; }
+
+    .next-del { font-size: 12px; color: #444; }
+    .next-del span { display: block; color: #888; font-size: 11px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a2e; color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      transform: translateY(80px); opacity: 0;
+      transition: transform .3s, opacity .3s;
+      z-index: 1000;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid #4CAF50; }
+    .toast.error   { border-left: 4px solid #ef4444; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-page">
+  <div class="login-card">
+    <h2>🥚 Gautam Egg Store</h2>
+    <p>Subscription Admin Panel</p>
+    <div class="form-group">
+      <label>Admin Email</label>
+      <input type="email" id="email" placeholder="admin@example.com" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="login-btn">Sign In</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <header>
+    <h1>Subscription Orders</h1>
+    <div id="user-info">
+      <span id="admin-email"></span>
+      <button class="btn-logout" id="logout-btn">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="pending" id="tab-pending">
+        Pending <span class="badge" id="pending-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="active" id="tab-active">
+        Active <span class="badge" id="active-count">0</span>
+      </button>
+    </div>
+
+    <div class="card" id="table-wrap">
+      <div class="loading" id="loading-msg">Loading subscriptions…</div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Firebase config ───────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyCMEfHkmIKNB4aiLE0j4W_QPAiz_nt3fgA",
+    authDomain:        "gautam-egg-store.firebaseapp.com",
+    projectId:         "gautam-egg-store",
+    storageBucket:     "gautam-egg-store.firebasestorage.app",
+    messagingSenderId: "884775143490",
+    appId:             "1:884775143490:android:fa8917d2e4fcb78e1d05db"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let currentTab  = 'pending';
+  let allSubs     = { pending: [], active: [] };
+  let unsubscribe = null;
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const loginPage   = document.getElementById('login-page');
+  const app         = document.getElementById('app');
+  const tableWrap   = document.getElementById('table-wrap');
+  const loginBtn    = document.getElementById('login-btn');
+  const logoutBtn   = document.getElementById('logout-btn');
+  const loginError  = document.getElementById('login-error');
+  const adminEmail  = document.getElementById('admin-email');
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      loginPage.style.display = 'none';
+      app.style.display = 'block';
+      adminEmail.textContent = user.email;
+      startListening();
+    } else {
+      loginPage.style.display = 'flex';
+      app.style.display = 'none';
+      if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    }
+  });
+
+  loginBtn.addEventListener('click', async () => {
+    loginError.textContent = '';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Signing in…';
+    try {
+      await auth.signInWithEmailAndPassword(
+        document.getElementById('email').value.trim(),
+        document.getElementById('password').value
+      );
+    } catch (err) {
+      loginError.textContent = friendlyAuthError(err.code);
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Sign In';
+    }
+  });
+
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loginBtn.click();
+  });
+
+  logoutBtn.addEventListener('click', () => auth.signOut());
+
+  function friendlyAuthError(code) {
+    const map = {
+      'auth/user-not-found':    'No admin account found with that email.',
+      'auth/wrong-password':    'Incorrect password.',
+      'auth/invalid-email':     'Please enter a valid email address.',
+      'auth/too-many-requests': 'Too many attempts. Try again later.',
+      'auth/invalid-credential':'Invalid email or password.',
+    };
+    return map[code] || 'Sign-in failed. Check your credentials.';
+  }
+
+  // ── Firestore listener ────────────────────────────────────────────────────
+  function startListening() {
+    tableWrap.innerHTML = '<div class="loading">Loading subscriptions…</div>';
+
+    if (unsubscribe) unsubscribe();
+
+    unsubscribe = db.collection('eco_subscriptions')
+      .where('status', 'in', ['pending', 'active'])
+      .orderBy('createdAt', 'desc')
+      .onSnapshot(snap => {
+        allSubs = { pending: [], active: [] };
+        snap.forEach(doc => {
+          const d = { id: doc.id, ...doc.data() };
+          if (d.status === 'pending') allSubs.pending.push(d);
+          else if (d.status === 'active') allSubs.active.push(d);
+        });
+        updateBadges();
+        renderTable();
+      }, err => {
+        tableWrap.innerHTML = `<div class="card-empty">Error loading data: ${err.message}</div>`;
+      });
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      renderTable();
+    });
+  });
+
+  function updateBadges() {
+    document.getElementById('pending-count').textContent = allSubs.pending.length;
+    document.getElementById('active-count').textContent  = allSubs.active.length;
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderTable() {
+    const subs = allSubs[currentTab] ?? [];
+    if (!subs.length) {
+      tableWrap.innerHTML = `<div class="card-empty">No ${currentTab} subscriptions.</div>`;
+      return;
+    }
+
+    const rows = subs.map(s => buildRow(s)).join('');
+    tableWrap.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Products</th>
+            <th>Schedule</th>
+            <th>Total</th>
+            ${currentTab === 'pending'
+              ? '<th>Next Delivery &amp; Verify</th>'
+              : '<th>Next Delivery</th>'}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+    // Attach verify / reschedule handlers
+    tableWrap.querySelectorAll('[data-verify]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        verifySubscription(btn.dataset.verify, btn);
+      });
+    });
+
+    tableWrap.querySelectorAll('[data-reschedule]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id    = btn.dataset.reschedule;
+        const input = document.getElementById(`rdt-${id}`);
+        if (!input || !input.value) { showToast('Pick a new delivery date/time.', 'error'); return; }
+        rescheduleSubscription(id, input.value, btn);
+      });
+    });
+  }
+
+  function buildRow(s) {
+    const userName  = s.user?.name  || s.user?.displayName || '—';
+    const userPhone = s.user?.phone || s.user?.phoneNumber  || '';
+    const products  = buildProductSummary(s);
+    const schedule  = buildScheduleLabel(s.repeatSchedule);
+    const total     = formatCurrency(s.total);
+    const created   = formatDate(s.createdAt);
+
+    if (s.status === 'pending') {
+      return `
+        <tr>
+          <td>
+            <div class="user-name">${esc(userName)}</div>
+            <div class="user-phone">${esc(userPhone)}</div>
+            <div class="user-phone" style="margin-top:4px;color:#aaa">Created ${created}</div>
+          </td>
+          <td><div class="products-list">${products}</div></td>
+          <td><span class="schedule-badge">${schedule}</span></td>
+          <td class="total-cell">${total}</td>
+          <td>
+            <button class="btn-verify" data-verify="${s.id}">✓ Verify</button>
+          </td>
+        </tr>`;
+    }
+
+    // Active — show next delivery + reschedule option
+    const nextDel = s.nextDeliveryAt
+      ? formatDate(s.nextDeliveryAt)
+      : 'Not set';
+    const minDt2 = toDatetimeLocalValue(new Date());
+    return `
+      <tr>
+        <td>
+          <div class="user-name">${esc(userName)}</div>
+          <div class="user-phone">${esc(userPhone)}</div>
+        </td>
+        <td><div class="products-list">${products}</div></td>
+        <td><span class="schedule-badge">${schedule}</span></td>
+        <td class="total-cell">${total}</td>
+        <td>
+          <div class="next-del">${nextDel}</div>
+          <div class="verify-form" style="margin-top:8px">
+            <input type="datetime-local" id="rdt-${s.id}" min="${minDt2}">
+            <button class="btn-reschedule" data-reschedule="${s.id}">Reschedule</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  async function verifySubscription(id, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      await db.collection('eco_subscriptions').doc(id).update({
+        status:    'active',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      showToast('Subscription verified and activated!', 'success');
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Verify';
+    }
+  }
+
+  async function rescheduleSubscription(id, datetimeValue, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const date = new Date(datetimeValue);
+      await db.collection('eco_subscriptions').doc(id).update({
+        nextDeliveryAt: firebase.firestore.Timestamp.fromDate(date),
+        updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      showToast('Next delivery date updated.', 'success');
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Reschedule';
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function buildProductSummary(s) {
+    if (!s.productDetails) return '—';
+    return Object.entries(s.productDetails)
+      .slice(0, 4)
+      .map(([, v]) => `<span>• ${esc(v.productName || v.name || 'Item')} × ${v.quantity}</span>`)
+      .join('') +
+      (Object.keys(s.productDetails).length > 4
+        ? `<span style="color:#aaa">+${Object.keys(s.productDetails).length - 4} more</span>`
+        : '');
+  }
+
+  function buildScheduleLabel(rs) {
+    if (!rs) return '—';
+    const freq = rs.frequency || '';
+    const labels = {
+      daily:      'Daily',
+      weekly:     `Weekly (${capitalize(rs.weekday || '')})`,
+      midWeekly:  `Twice/week`,
+      monthly:    `Monthly (day ${rs.dayOfMonth || '?'})`,
+    };
+    return labels[freq] || freq;
+  }
+
+  function formatCurrency(v) {
+    return '₹' + (Number(v) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  }
+
+  function formatDate(val) {
+    if (!val) return '—';
+    let d;
+    if (val?.toDate) d = val.toDate();
+    else if (val?.seconds) d = new Date(val.seconds * 1000);
+    else d = new Date(val);
+    return isNaN(d) ? '—' : d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  function toDatetimeLocalValue(date) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}` +
+           `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'": '&#39;' }[c]));
+  }
+
+  function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3200);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del \"c:\\\\Users\\\\cmidp\\\\Desktop\\\\flutter_apps\\\\Sure-Wholesaler-App-Code\\\\android\\\\app\\\\src\\\\main\\\\res\\\\drawable\\\\ic_notification.xml\")",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter pub *)",
+      "Bash(flutter clean *)",
+      "Bash(dart analyze *)",
+      "Bash(xargs -0 grep -l \"^// class\\\\|^// import\\\\|^// .*Screen\")",
+      "Bash(xargs -0 wc -l)",
+      "Bash(awk '$1 ~ /^[0-9]+$/ && $1 < 50 {print $2}')",
+      "Bash(Find \"d:\\\\flutter_apps\\\\eco_grocery\\\\functions\" -name \"*.js\" -type f)",
+      "Bash(cd /d)",
+      "Bash(Get-ChildItem -Path \"d:\\\\flutter_apps\\\\eco_grocery\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xargs grep *)",
+      "Bash(grep -rn \"///\" lib/screens lib/features lib/notifiers --include=\"*.dart\")"
+    ]
+  }
+}

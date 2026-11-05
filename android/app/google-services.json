@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "884775143490",
+    "project_id": "gautam-egg-store",
+    "storage_bucket": "gautam-egg-store.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:884775143490:android:fa8917d2e4fcb78e1d05db",
+        "android_client_info": {
+          "package_name": "com.app.gautam_egg_store"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMEfHkmIKNB4aiLE0j4W_QPAiz_nt3fgA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
