@@ -760,16 +760,6 @@ class _CheckoutBar extends ConsumerWidget {
   final bool embedded;
 
   void _onCheckoutPressed(BuildContext context, WidgetRef ref) {
-    final cleanTotal = AppConfig.getCleanPrice(total);
-    if (cleanTotal < 100) {
-      AppNotifications.showError(
-        context,
-        title: 'Error',
-        message: 'Minimum order amount is ₹100',
-      );
-      return;
-    }
-
     final uid = ref.read(currentUserIdProvider);
     if (uid == null) {
       AppNotifications.showError(

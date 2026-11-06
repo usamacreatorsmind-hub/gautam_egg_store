@@ -24,6 +24,7 @@ import 'package:sure_wholesaler/notifiers/product_notifier.dart';
 import 'package:sure_wholesaler/notifiers/warehouse_notifier.dart';
 import 'package:sure_wholesaler/screens/cart/repeat_schedule_card.dart';
 import 'package:sure_wholesaler/services/whatsapp_api_service.dart';
+import 'package:sure_wholesaler/services/razorpay_helper.dart';
 import 'package:sure_wholesaler/widgets/app_loader.dart';
 import 'package:sure_wholesaler/widgets/image_builder.dart';
 import 'package:sure_wholesaler/utils/app_notifications.dart';
@@ -176,15 +177,12 @@ const _kPaymentMethods = [
     subtitle: 'Pay when your order arrives',
     icon: Icons.payments_outlined,
   ),
-  // Online payment disabled as Razorpay is not yet configured for this project
-  /*
   _PaymentOption(
     id: PaymentMethod.online,
     label: 'Online Payment',
     subtitle: 'UPI · Cards · Net Banking',
     icon: Icons.account_balance_wallet_outlined,
   ),
-  */
 ];
 
 // ─── screen ────────────────────────────────────────────────────────────────────
@@ -209,8 +207,7 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
   final _upiController = TextEditingController();
   final _couponController = TextEditingController();
 
-  // Razorpay disabled as it is not yet configured for this project
-  // RazorPayHelper? _razorPay;
+  RazorPayHelper? _razorPay;
 
   _DeliveryCalc _deliveryCalc = _DeliveryCalc.unknown;
   bool _calculatingDelivery = true;
@@ -219,25 +216,21 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initDeliveryCharge());
-    // Razorpay disabled as it is not yet configured for this project
-    /*
     _razorPay = RazorPayHelper(
       onSuccess: (pId, oId, sig) => _handlePaymentSuccess(),
       onError: (err) => _handlePaymentError(err),
       onExternalWallet: (_) {},
     );
-    */
   }
 
   @override
   void dispose() {
     _upiController.dispose();
     _couponController.dispose();
-    // _razorPay?.dispose();
+    _razorPay?.dispose();
     super.dispose();
   }
 
-  /*
   Future<void> _handlePaymentSuccess() async {
     if (!mounted) return;
     final pendingOrder = _pendingOnlineOrder;
@@ -257,7 +250,6 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
     _pendingOnlineOrder = null;
     _clearCartAndNavigate();
   }
-  */
 
   Future<void> _performCartCleanup() async {
     if (_itemsToClear == null) return;
@@ -270,7 +262,6 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
     _itemsToClear = null;
   }
 
-  /*
   void _handlePaymentError(String error) {
     if (!mounted) return;
     setState(() => _isPlacingOrder = false);
@@ -280,7 +271,6 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
       message: 'Payment failed: $error',
     );
   }
-  */
 
   void _clearCartAndNavigate() {
     // Clear applied coupon when order is placed successfully
@@ -779,15 +769,6 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
       settings: settings,
     );
 
-    if (AppConfig.getCleanPrice(freshCharges.total) < 100) {
-      AppNotifications.showError(
-        context,
-        title: 'Error',
-        message: 'Minimum order amount is ₹100',
-      );
-      return;
-    }
-
     setState(() => _isPlacingOrder = true);
 
     try {
@@ -897,8 +878,6 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
       final persistedOrder = order.copyWith(id: orderId);
       await _sendOrderBillToWhatsApp(persistedOrder);
 
-      // Online payment logic commented out as Razorpay is not configured
-      /*
       if (paymentMethodValue == PaymentMethod.online) {
         _pendingOnlineOrder = persistedOrder;
         _razorPay?.initiatePayment(
@@ -913,7 +892,6 @@ class _OrderSummaryScreenState extends ConsumerState<OrderSummaryScreen> {
         );
         return; // Wait for payment callback
       }
-      */
 
       await _performCartCleanup();
 
@@ -1467,29 +1445,30 @@ class _BottomBar extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 16.w),
-                SizedBox(
-                  height: 54.h,
-                  width: 160.w,
-                  child: ElevatedButton(
-                    onPressed: (isPlacingOrder || !canPlace) ? null : onPlaceOrder,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.r),
+                Expanded(
+                  child: SizedBox(
+                    height: 54.h,
+                    child: ElevatedButton(
+                      onPressed: (isPlacingOrder || !canPlace) ? null : onPlaceOrder,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
                       ),
-                    ),
-                    child: isPlacingOrder
-                        ? const SizedBox(width: 20, height: 20, child: AppLoader(strokeWidth: 2, color: Colors.white))
-                        : Text(
-                            paymentMethod == PaymentMethod.cod ? 'PLACE ORDER' : 'PAY NOW',
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                      child: isPlacingOrder
+                          ? const SizedBox(width: 20, height: 20, child: AppLoader(strokeWidth: 2, color: Colors.white))
+                          : Text(
+                              paymentMethod == PaymentMethod.cod ? 'Place Order' : 'Pay Now',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                 ),
               ],

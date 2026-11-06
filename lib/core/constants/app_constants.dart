@@ -66,7 +66,7 @@ class AppConfig {
   static const String businessAddress = 'Bagmali Sanchi patti Hajijpur , Vaishali , Bihar 844123';
 
   // ignore: non_constant_identifier_names
-  static var RAZ_KEY = "rzp_test_ebaOKw4xjzfhCR";
+  static String RAZ_KEY = "rzp_live_TwVL6d1PSGZHTh";
 
   /// Hard Fix for 100x issue:
   /// The database stores prices in Paisa (subunits).

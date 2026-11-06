@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sure_wholesaler/core/routing/app_router.dart';
 import 'package:sure_wholesaler/features/invoicePdfService/InvoicePdfService.dart';
-// import 'package:sure_wholesaler/services/razorpay_helper.dart';
+import 'package:sure_wholesaler/services/razorpay_helper.dart';
 import 'package:sure_wholesaler/models/order_model.dart';
 import 'package:sure_wholesaler/models/pack_variant_model.dart';
 import 'package:sure_wholesaler/models/product_model.dart';
@@ -30,20 +30,34 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
-  // Razorpay disabled as it is not yet configured for this project
-  // RazorPayHelper? _razorPay;
+  RazorPayHelper? _razorPay;
+  bool _isPaying = false;
 
   @override
   void initState() {
     super.initState();
+    _razorPay = RazorPayHelper(
+      onSuccess: (pId, oId, sig) => _markOrderPaid(),
+      onError: (err) {
+        if (mounted) {
+          setState(() => _isPaying = false);
+          AppNotifications.showError(
+            context,
+            title: 'Error',
+            message: 'Payment failed: $err',
+          );
+        }
+      },
+      onExternalWallet: (_) {},
+    );
   }
 
   @override
   void dispose() {
+    _razorPay?.dispose();
     super.dispose();
   }
 
-  /*
   Future<void> _markOrderPaid() async {
     if (!mounted) return;
     final orderId = widget.order.id;
@@ -51,16 +65,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final updated = widget.order.copyWith(paymentStatus: PaymentStatus.paid);
     await ref.read(orderRepositoryProvider).updateOrder(orderId, updated);
     if (!mounted) return;
-    // setState(() => _isPaying = false);
+    setState(() => _isPaying = false);
     AppNotifications.showSuccess(
       context,
       title: 'Success',
       message: 'Payment successful!',
     );
   }
-  */
 
-  /*
   void _payNow(OrderModel order) {
     setState(() => _isPaying = true);
     _razorPay?.initiatePayment(
@@ -73,7 +85,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       },
     );
   }
-  */
 
   void _showCancelDialog(BuildContext context, OrderModel order) {
     final theme = Theme.of(context);
@@ -144,16 +155,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
-  /*
   Widget _buildBottomBar(BuildContext context, OrderModel order) {
     final scheme = Theme.of(context).colorScheme;
     final normalizedPaymentMethod = (order.paymentMethod ?? '').toUpperCase();
-    // Online payment disabled as Razorpay is not yet configured
-    final needsPayment = false;
-    /*
     final needsPayment = order.paymentStatus == PaymentStatus.awaitingPayment &&
         (normalizedPaymentMethod == PaymentMethod.online || normalizedPaymentMethod.startsWith('UPI'));
-    */
 
     if (needsPayment) {
       return Padding(
@@ -182,15 +188,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(right: 8.w),
-                  child: ElevatedButton(
+                  child: OutlinedButton(
                     onPressed: () => _showCancelDialog(context, order),
-                    style: ElevatedButton.styleFrom(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppConfig.appName == 'Gautam Egg Store' ? Colors.red.shade700 : AppColors.brandSeed,
                       minimumSize: Size(double.infinity, 48.h),
-                      side: BorderSide(color: scheme.primary, width: 1.5),
-                      backgroundColor: AppColors.badge,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
                     ),
-                    child: Text('Cancel', style: TextStyle(color: scheme.onSecondary, fontWeight: FontWeight.w600)),
+                    child: const Text('Cancel Order', style: TextStyle(color: AppColors.background, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
@@ -213,89 +218,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       );
     }
 
-    if (order.status == OrderStatus.pending) {
-      return Padding(
-        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
-        child: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: 8.w),
-                child: OutlinedButton(
-                  onPressed: () => _generateBill(order),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 48.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25.r),
-                    ),
-                  ),
-                  child: const Text(
-                    'Bill',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _showCancelDialog(context, order),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.brandSeed,
-                  minimumSize: Size(double.infinity, 48.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25.r),
-                  ),
-                ),
-                child: Text(
-                  'Cancel Order',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.background,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: 8.w),
-              child: OutlinedButton(
-                onPressed: () => _generateBill(order),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 48.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25.r),
-                  ),
-                ),
-                child: const Text(
-                  'Generate Bill',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => context.pop(),
-              style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 48.h), backgroundColor: AppColors.brandSeed),
-              child: const Text('Back', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.background)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  */
-
-  Widget _buildBottomBar(BuildContext context, OrderModel order) {
     if (order.status == OrderStatus.pending) {
       return Padding(
         padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
